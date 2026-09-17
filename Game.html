@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE MULTI-LEVEL RAGE ESCAPE</title>
+    <!-- Three.js 3D Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #ffffff;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .modal {
+            background: rgba(255, 255, 255, 0.95);
+            color: #0f172a;
+            border: 4px solid #0f172a;
+            border-radius: 20px;
+            padding: 24px;
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 8px 8px 0px #0f172a;
+            pointer-events: auto;
+        }
+
+        h1 {
+            color: #dc2626;
+            font-size: 24px;
+            font-weight: 900;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        p {
+            color: #475569;
+            font-size: 15px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: 3px solid #0f172a;
+            padding: 12px 18px;
+            font-size: 15px;
+            font-weight: 800;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 8px;
+            box-shadow: 4px 4px 0px #0f172a;
+            transition: all 0.1s ease;
+        }
+
+        .btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #0f172a;
+        }
+
+        .opt-btn {
+            background: #f1f5f9;
+            color: #0f172a;
+            text-align: left;
+            margin: 6px 0;
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 5;
+            display: flex;
+            gap: 15px;
+        }
+
+        .hud-card {
+            font-size: 16px;
+            font-weight: 900;
+            color: #0f172a;
+            background: #ffffff;
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 3px solid #0f172a;
+            box-shadow: 4px 4px 0px #0f172a;
+        }
+
+        .hidden { display: none !important; }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 160px;
+        }
+
+        .ctrl-btn {
+            background: #ffffff;
+            border: 3px solid #0f172a;
+            color: #0f172a;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 900;
+            pointer-events: auto;
+            touch-action: manipulation;
+            box-shadow: 3px 3px 0px #0f172a;
+        }
+
+        .roast-badge {
+            background: #fef2f2;
+            border: 2px dashed #ef4444;
+            color: #b91c1c;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+        <div class="hud-card">LEVEL: <span id="level-num" style="color: #2563eb;">1</span>/3</div>
+        <div class="hud-card">TIME: <span id="timer" style="color: #dc2626;">20</span>s</div>
+    </div>
+
+    <!-- TOUCH CONTROLS -->
+    <div id="controls" class="hidden">
+        <div></div><button class="ctrl-btn" id="btn-up">▲</button><div></div>
+        <button class="ctrl-btn" id="btn-left">◄</button><div></div><button class="ctrl-btn" id="btn-right">►</button>
+        <div></div><button class="ctrl-btn" id="btn-down">▼</button><div></div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div class="ui-layer">
+        
+        <!-- PHASE 1: QUIZ / QUESTIONS MODAL -->
+        <div id="screen-quiz" class="modal">
+            <h1 id="quiz-title">QUESTION 1 / 3</h1>
+            <p id="quiz-q" style="font-weight: 800; color: #0f172a;"></p>
+            <div id="quiz-options"></div>
+            <div id="quiz-roast" class="roast-badge">Option chuno aur meme voice suno!</div>
+        </div>
+
+        <!-- PHASE 2: LEVEL UP / TRANSITION SCREEN -->
+        <div id="screen-lvlup" class="modal hidden">
+            <h1 style="color: #16a34a;" id="lvlup-title">LEVEL CLEAR! 🎉</h1>
+            <div id="lvlup-msg" class="roast-badge" style="background: #f0fdf4; border-color: #22c55e; color: #15803d;"></div>
+            <button class="btn" onclick="nextLevelStart()">NEXT LEVEL KHELO ➔</button>
+        </div>
+
+        <!-- GAMEOVER SCREEN -->
+        <div id="screen-gameover" class="modal hidden">
+            <h1 id="go-title">GAME OVER! 💩</h1>
+            <div id="meme-box" class="roast-badge"></div>
+            <button class="btn" onclick="restartGame()" style="background: #dc2626;">DOBARA RESTART KARO</button>
+        </div>
+
+        <!-- WINNING SCREEN -->
+        <div id="screen-win" class="modal hidden">
+            <h1 style="color: #16a34a;">ULTIMATE CHAMPION! 🏆</h1>
+            <p style="font-weight: 800;">Bhai tu toh sach me saare levels jeet gaya! Legendary Reflexes!</p>
+            <button class="btn" onclick="restartGame()" style="background: #16a34a;">AGAIN PLAY KARO</button>
+        </div>
+
+    </div>
+
+<script>
+    // --- REAL MEME AUDIO SYSTEM WITH WEB AUDIO FALLBACK ---
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    let bgInterval = null;
+
+    const audioClips = {
+        puneetLaugh: new Audio('https://www.myinstants.com/media/sounds/puneet-superstar-laugh.mp3'),
+        puneetAukat: new Audio('https://www.myinstants.com/media/sounds/puneet-superstar-aukat-me-raho.mp3'),
+        rahulKhatam: new Audio('https://www.myinstants.com/media/sounds/khatam-bye-bye-tata.mp3'),
+        bruh: new Audio('https://www.myinstants.com/media/sounds/bruh-sound-effect-1.mp3'),
+        damage: new Audio('https://www.myinstants.com/media/sounds/emotional-damage-meme.mp3')
+    };
+
+    function initAudio() {
+        if (!audioCtx) audioCtx = new AudioCtx();
+    }
+
+    function playMemeSound(key) {
+        initAudio();
+        try {
+            Object.values(audioClips).forEach(a => { a.pause(); a.currentTime = 0; });
+            if (audioClips[key]) {
+                audioClips[key].play().catch(() => playSynthFallback());
+            } else {
+                playSynthFallback();
+            }
+        } catch(e) {
+            playSynthFallback();
+        }
+    }
+
+    function playSynthFallback() {
+        if (!audioCtx) return;
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.value = 180;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4);
+        osc.stop(audioCtx.currentTime + 0.4);
+    }
+
+    function startBgMusic() {
+        if (bgInterval) clearInterval(bgInterval);
+        let notes = [220, 280, 330, 250, 290];
+        let i = 0;
+        bgInterval = setInterval(() => {
+            if (!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = notes[i % notes.length];
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+                osc.stop(audioCtx.currentTime + 0.15);
+            } catch(e){}
+            i++;
+        }, 320);
+    }
+
+    function stopBgMusic() {
+        if (bgInterval) clearInterval(bgInterval);
+    }
+
+    // --- QUIZ DATA ---
+    const quizData = [
+        {
+            q: "Sawal 1: Agar samne se crush gujare toh kya karoge?",
+            opts: [
+                { txt: "Smile dunga mast", roast: "Crush ne bola: 'Aukat me raho!'", sound: "puneetAukat" },
+                { txt: "Aankhein band karke nikal jaunga", roast: "Darr ka mahaul hai!", sound: "bruh" },
+                { txt: "Dost ko bolunga bhabhi hai teri", roast: "Dost ne bola: Emotional Damage!", sound: "damage" }
+            ]
+        },
+        {
+            q: "Sawal 2: Exam me bina padhe jaoge toh kya hoga?",
+            opts: [
+                { txt: "Agle saal top karunga", roast: "Rahul Gandhi: Khatam! Bye Bye!", sound: "rahulKhatam" },
+                { txt: "Aaspas wale se dekhunga", roast: "Uska bhi tumse bura haal hai!", sound: "bruh" }
+            ]
+        },
+        {
+            q: "Sawal 3: Iss 3D Maze Game me tumhara kya lagta hai?",
+            opts: [
+                { txt: "Pehli baar me saare level clear", roast: "Puneet Superstar tum par hans raha hai!", sound: "puneetLaugh" },
+                { txt: "Bas bathroom gate tak pahunch jaun", roast: "Aukat me reh kar khelo!", sound: "puneetAukat" }
+            ]
+        }
+    ];
+
+    let currentQ = 0;
+
+    function loadQuiz() {
+        if (currentQ >= quizData.length) {
+            document.getElementById('screen-quiz').classList.add('hidden');
+            start3DGame();
+            return;
+        }
+
+        document.getElementById('quiz-title').innerText = `QUESTION ${currentQ + 1} / ${quizData.length}`;
+        const item = quizData[currentQ];
+        document.getElementById('quiz-q').innerText = item.q;
+
+        const container = document.getElementById('quiz-options');
+        container.innerHTML = "";
+
+        item.opts.forEach(o => {
+            const b = document.createElement('button');
+            b.className = "btn opt-btn";
+            b.innerText = o.txt;
+            b.onclick = () => {
+                playMemeSound(o.sound);
+                document.getElementById('quiz-roast').innerText = o.roast;
+                setTimeout(() => {
+                    currentQ++;
+                    loadQuiz();
+                }, 1800);
+            };
+            container.appendChild(b);
+        });
+    }
+
+    // --- THREE.JS MULTI-LEVEL ENGINE ---
+    let scene, camera, renderer;
+    let player, ghost, exitPortal;
+    let gameActive = false;
+    let currentLevel = 1;
+    let timeLeft = 20;
+    let timerInterval;
+
+    const move = { up: false, down: false, left: false, right: false };
+
+    function init3D() {
+        const container = document.getElementById('canvas-container');
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf8fafc);
+        scene.fog = new THREE.FogExp2(0xf8fafc, 0.04);
+
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0x2563eb, 0.6);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // Floor
+        const floorGeo = new THREE.PlaneGeometry(30, 30);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Boundary Walls
+        createWall(0, 1, -15, 30, 2, 1);
+        createWall(0, 1, 15, 30, 2, 1);
+        createWall(-15, 1, 0, 1, 2, 30);
+        createWall(15, 1, 0, 1, 2, 30);
+
+        // Player (Blue Sphere)
+        const playerGeo = new THREE.SphereGeometry(0.8, 32, 32);
+        const playerMat = new THREE.MeshStandardMaterial({ color: 0x2563eb });
+        player = new THREE.Mesh(playerGeo, playerMat);
+        player.position.set(-12, 0.8, -12);
+        player.castShadow = true;
+        scene.add(player);
+
+        // Ghost (Red Cone)
+        const ghostGeo = new THREE.ConeGeometry(1, 2, 16);
+        const ghostMat = new THREE.MeshStandardMaterial({ color: 0xdc2626 });
+        ghost = new THREE.Mesh(ghostGeo, ghostMat);
+        ghost.position.set(10, 1, 10);
+        ghost.castShadow = true;
+        scene.add(ghost);
+
+        // Exit Door (Green Portal)
+        const exitGeo = new THREE.BoxGeometry(2, 3, 0.4);
+        const exitMat = new THREE.MeshStandardMaterial({ color: 0x16a34a });
+        exitPortal = new THREE.Mesh(exitGeo, exitMat);
+        exitPortal.position.set(12, 1.5, -12);
+        scene.add(exitPortal);
+
+        camera.position.set(0, 18, 15);
+        camera.lookAt(0, 0, 0);
+
+        window.addEventListener('keydown', (e) => handleKey(e.key, true));
+        window.addEventListener('keyup', (e) => handleKey(e.key, false));
+        window.addEventListener('resize', onWindowResize);
+
+        bindTouchControl('btn-up', 'up');
+        bindTouchControl('btn-down', 'down');
+        bindTouchControl('btn-left', 'left');
+        bindTouchControl('btn-right', 'right');
+
+        animate();
+    }
+
+    function createWall(x, y, z, w, h, d) {
+        const wallGeo = new THREE.BoxGeometry(w, h, d);
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+        const wall = new THREE.Mesh(wallGeo, wallMat);
+        wall.position.set(x, y, z);
+        scene.add(wall);
+    }
+
+    function bindTouchControl(id, dir) {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); move[dir] = true; });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); move[dir] = false; });
+        btn.addEventListener('mousedown', () => move[dir] = true);
+        btn.addEventListener('mouseup', () => move[dir] = false);
+    }
+
+    function handleKey(key, isPressed) {
+        if (key === 'ArrowUp' || key === 'w') move.up = isPressed;
+        if (key === 'ArrowDown' || key === 's') move.down = isPressed;
+        if (key === 'ArrowLeft' || key === 'a') move.left = isPressed;
+        if (key === 'ArrowRight' || key === 'd') move.right = isPressed;
+    }
+
+    function start3DGame() {
+        startBgMusic();
+        document.getElementById('hud').classList.remove('hidden');
+        document.getElementById('controls').classList.remove('hidden');
+
+        resetPositions();
+        gameActive = true;
+        timeLeft = 20;
+        document.getElementById('level-num').innerText = currentLevel;
+
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft;
+            if (timeLeft <= 0) {
+                triggerGameOver("TIME OVER! Slow Speed Ki Wajah Se Ghost Ne Catch Kar Liya!");
+            }
+        }, 1000);
+    }
+
+    function resetPositions() {
+        player.position.set(-12, 0.8, -12);
+        ghost.position.set(10, 1, 10);
+        if (currentLevel === 1) exitPortal.position.set(12, 1.5, -12);
+        if (currentLevel === 2) exitPortal.position.set(-12, 1.5, 12);
+        if (currentLevel === 3) exitPortal.position.set(12, 1.5, 12);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        if (gameActive) {
+            const speed = 0.22;
+
+            if (move.up && player.position.z > -13.5) player.position.z -= speed;
+            if (move.down && player.position.z < 13.5) player.position.z += speed;
+            if (move.left && player.position.x > -13.5) player.position.x -= speed;
+            if (move.right && player.position.x < 13.5) player.position.x += speed;
+
+            // Ghost Speed increases per Level
+            let gSpd = 0.08 + (currentLevel * 0.035);
+            if (ghost.position.x < player.position.x) ghost.position.x += gSpd;
+            if (ghost.position.x > player.position.x) ghost.position.x -= gSpd;
+            if (ghost.position.z < player.position.z) ghost.position.z += gSpd;
+            if (ghost.position.z > player.position.z) ghost.position.z -= gSpd;
+
+            // GATE / PORTAL TOUCH CHECK
+            let distToGate = player.position.distanceTo(exitPortal.position);
+            if (distToGate < 2.0) {
+                handleGateReach();
+                return;
+            }
+
+            // Ghost Catch
+            let distToGhost = player.position.distanceTo(ghost.position);
+            if (distToGhost < 1.4) {
+                triggerGameOver("GHOST NE PAKAD LIYA! Level Complete Nahi Ho Paya!");
+            }
+
+            camera.position.x = player.position.x * 0.3;
+            camera.position.z = (player.position.z * 0.3) + 15;
+            camera.lookAt(player.position.x, 0, player.position.z);
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    function handleGateReach() {
+        gameActive = false;
+        clearInterval(timerInterval);
+
+        if (currentLevel === 1) {
+            // Level 1 Toilet Troll Trap
+            playMemeSound('puneetLaugh');
+            document.getElementById('lvlup-title').innerText = "LEVEL 1 CLEAR (LEKIN TROLL!)";
+            document.getElementById('lvlup-msg').innerText = "🚽 YE EXIT DOOR NAHI PUBLIC TOILET THA! Ab Level 2 me asli exit dhoondho!";
+            document.getElementById('screen-lvlup').classList.remove('hidden');
+        } else if (currentLevel === 2) {
+            playMemeSound('puneetAukat');
+            document.getElementById('lvlup-title').innerText = "LEVEL 2 CLEAR!";
+            document.getElementById('lvlup-msg').innerText = "🔥 Ekdum Badiya! Ab BOSS LEVEL 3 start hone wala hai jisme Ghost Fast Hoga!";
+            document.getElementById('screen-lvlup').classList.remove('hidden');
+        } else if (currentLevel === 3) {
+            playMemeSound('rahulKhatam');
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('controls').classList.add('hidden');
+            document.getElementById('screen-win').classList.remove('hidden');
+        }
+    }
+
+    function nextLevelStart() {
+        document.getElementById('screen-lvlup').classList.add('hidden');
+        currentLevel++;
+        start3DGame();
+    }
+
+    function triggerGameOver(roastText) {
+        gameActive = false;
+        clearInterval(timerInterval);
+        stopBgMusic();
+        playMemeSound('damage');
+
+        document.getElementById('hud').classList.add('hidden');
+        document.getElementById('controls').classList.add('hidden');
+        document.getElementById('screen-gameover').classList.remove('hidden');
+        document.getElementById('meme-box').innerText = roastText;
+    }
+
+    function restartGame() {
+        location.reload();
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        rendere
